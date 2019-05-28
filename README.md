@@ -3,6 +3,7 @@
 解决问题：
 1、在接口还未响应时再次调用接口时会做出拦截，不会发起请求
 2、结合Vue可创建接口loading的响应式状态
+3、接口缓存 适用于get请求
 
 ## Install
 ```shell
@@ -22,15 +23,19 @@ const http = axios.create({
 const apiConfig = {
   login: {
     url: 'xxxx',
-    method: 'get'
+    method: 'get',
+    // 是否开启缓存
+    cache: true,
+    // 缓存时间 默认为无限制
+    cacheTime: 3000
   },
   // 支持 RESTful API 风格
-  logout (path) {
-    // path 参数在调用api时传入
-    return {
-      url: `xxx/${path.xxx}`,
-      method: 'get'
-    }
+  logout: {
+    url (path) {
+      // path 参数在调用api的时候传入
+      return `/xxx/${path.xxx}`
+    },
+    method: 'get'
   }
 }
 
@@ -45,6 +50,9 @@ apiService.login.request(<config>)
 
 // 当前api的loading状态
 console.log(apiService.login.loading) // true
+
+// 手动清除api缓存
+apiService.login.clearCache()
 ```
 
 ## API
