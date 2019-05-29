@@ -35,6 +35,8 @@ const apiConfig = {
       // path 参数在调用api的时候传入
       return `/xxx/${path.xxx}`
     },
+    // 开启防抖
+    debounce: true,
     method: 'get'
   }
 }
@@ -64,6 +66,7 @@ apiService.login.clearCache()
 query  |  url带参  |  Object  |  --
 body  |  http请求体带参  |  Object  |  --
 path  |  动态url（RESTful API风格）  |  Object  |  --
+debounce  |  当前请求是否防抖（防止重复提交）  |  Boolean  |  --
 
 config 可配置 axios 的其他配置 例如 headers
 
