@@ -69,7 +69,7 @@ function ApiService (options) {
         }
 
         requestPromise
-          .then(...arg => resolve(...arg, clearOwnCache), err => (clearOwnCache(), reject(err)))
+          .then(res => resolve(Object.assign(res, { clearOwnCache })), err => (clearOwnCache(), reject(err)))
           .finally(() => api.loading = false)
       })
     }
