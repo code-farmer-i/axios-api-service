@@ -35,16 +35,17 @@ function ApiService (options) {
         body = {}
       } = requestConfig
 
-      const url = isFunction(url) ? url(path) : url
+      const requestUrl = isFunction(url) ? url(path) : url
 
       requestConfig = Object.assign(requestConfig, {
-        url,
+        url: requestUrl,
         method,
         params: query,
         data: body
       })
 
       const cacheKey = `${requestConfig.url}__${JSON.stringify(query)}__${JSON.stringify(body)}`
+      const clearOwnCache = () => clearCache(cacheKey)
       const {
         cache,
         cacheTime,
@@ -59,18 +60,16 @@ function ApiService (options) {
 
         const requestPromise = apiPromiseCache[cacheKey] || http.request(requestConfig)
 
+        if (cache && !apiPromiseCache[cacheKey]) {
+          apiPromiseCache[cacheKey] = requestPromise
+
+          if (cacheTime) {
+            setTimeout(clearOwnCache, cacheTime)
+          }
+        }
+
         requestPromise
-          .then((...arg) => {
-            if (cache && !apiPromiseCache[cacheKey]) {
-              apiPromiseCache[cacheKey] = requestPromise
-
-              if (cacheTime) {
-                setTimeout(() => clearCache(cacheKey), cacheTime)
-              }
-            }
-
-            resolve(...arg)
-          }, reject)
+          .then(...arg => resolve(...arg, clearOwnCache), err => (clearOwnCache(), reject(err)))
           .finally(() => api.loading = false)
       })
     }
