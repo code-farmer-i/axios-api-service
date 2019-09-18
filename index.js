@@ -1,14 +1,14 @@
+let apiPromiseCache = {}
+
 const isFunction = function (target) {
   return Object.prototype.toString.call(target) === '[object Function]'
 }
 
-const clearCache = function (cacheKey) {
+function clearCache (cacheKey) {
   delete apiPromiseCache[cacheKey]
 }
 
-const apiPromiseCache = {}
-
-export default function ApiService (options) {
+function ApiService (options) {
   const {
     apiConfig: config,
     http,
@@ -22,52 +22,77 @@ export default function ApiService (options) {
     const {
       url,
       method,
-      cache: useCache,
-      cacheTime,
-      debounce: aipDebounce
     } = apiConfig
 
-    const cacheKey = apiName
     const api = apiService[apiName] = {}
 
     api.loading = false
 
-    api.request = function (request = {}) {
+    api.request = function (requestConfig = {}) {
       const {
         path = {},
         query = {},
         body = {}
-      } = request
+      } = requestConfig
 
-      const requestConfig = Object.assign(request, {
-        url: isFunction(url) ? url(path) : url,
+      const url = isFunction(url) ? url(path) : url
+
+      requestConfig = Object.assign(requestConfig, {
+        url,
         method,
         params: query,
         data: body
       })
 
+      const cacheKey = `${requestConfig.url}__${JSON.stringify(query)}__${JSON.stringify(body)}`
+      const {
+        cache,
+        cacheTime,
+        debounce
+      } = Object.assign({}, apiConfig, requestConfig)
+
       return new Promise((resolve, reject) => {
         // 防抖
-        if (api.loading && ('debounce' in request ? request.debounce : aipDebounce)) return resolve({data: {}})
+        if (api.loading && debounce) return resolve({data: {}})
 
         api.loading = true
 
         const requestPromise = apiPromiseCache[cacheKey] || http.request(requestConfig)
 
-        if (useCache && !apiPromiseCache[cacheKey]) {
-          apiPromiseCache[cacheKey] = requestPromise
+        requestPromise
+          .then((...arg) => {
+            if (cache && !apiPromiseCache[cacheKey]) {
+              apiPromiseCache[cacheKey] = requestPromise
 
-          if (cacheTime) {
-            setTimeout(api.clearCache, cacheTime)
-          }
-        }
+              if (cacheTime) {
+                setTimeout(() => clearCache(cacheKey), cacheTime)
+              }
+            }
 
-        requestPromise.then(resolve, reject).finally(() => api.loading = false)
+            resolve(...arg)
+          }, reject)
+          .finally(() => api.loading = false)
       })
     }
 
-    api.clearCache = clearCache.bind(null, cacheKey)
+    api.clearCache = function () {
+      let newCache = {}
+
+      for (const cacheKey of Object.keys(apiPromiseCache)) {
+        if (!cacheKey.includes(url)) {
+          newCache[cacheKey] = apiPromiseCache[cacheKey]
+        }
+      }
+
+      apiPromiseCache = newCache
+    }
   }
 
   return observerbel ? observerbel(apiService) : apiService
 }
+
+ApiService.clearAllCache = function () {
+  apiPromiseCache = {}
+}
+
+export default ApiService
