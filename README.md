@@ -75,3 +75,18 @@ config 可配置 axios 的其他配置 例如 headers
 
 作者wx: ckang1229
 
+```bash
+# use npm
+npm i @kangc/v-md-editor -S
+
+# use yarn
+yarn add @kangc/v-md-editor
+```
+```bash
+# use npm
+npm i @kangc/v-md-editor -S
+
+# use yarn
+yarn add @kangc/v-md-editor
+```
+
